@@ -1,0 +1,135 @@
+# v915-setup
+
+Machine setup for the tutorials taught in **V915**, PolyU School of Design.
+
+One script, one manifest, one profile per tutorial. It installs git, VS Code, uv
+and whatever else a given week needs, checks the things that actually go wrong in
+a first class, and can be re-run safely at any point.
+
+Written for the SD5913 week-1 tutorial, but nothing in it is course-specific —
+SD2112 or a workshop can add a profile and use the same entry point.
+
+---
+
+## For students
+
+Open **PowerShell** and paste one line:
+
+```powershell
+irm https://raw.githubusercontent.com/ait4x/v915-setup/main/bootstrap.ps1 | iex
+```
+
+That downloads this repo to `Documents\v915-setup` and runs the setup. You will be
+asked for your name and email — use the ones on your GitHub account.
+
+If you already have the folder, double-click **`setup.bat`** instead.
+
+**When you finish on a lab machine, double-click `signout.bat`.** V915 computers are
+shared: without it, the next person's `git push` goes to *your* GitHub account.
+
+## For the instructor
+
+Survey a lab room before class — reports what is installed, changes nothing:
+
+```powershell
+.\setup.ps1 -Check
+```
+
+Set a room up ahead of time, including pre-downloading a Python interpreter so
+thirty machines are not fetching one at 9am:
+
+```powershell
+.\setup.ps1 -Profile base -InstallPython
+```
+
+Hand out a repo along with the tools:
+
+```powershell
+.\setup.ps1 -Clone sd5913/pfad
+```
+
+## Profiles
+
+```powershell
+.\setup.ps1 -List
+```
+
+| Profile | For |
+|---|---|
+| `base` | Week 1 baseline: git, VS Code, uv/Python |
+| `web` | Deployment weeks — adds Node.js and the GitHub CLI |
+| `media` | OpenCV / MediaPipe / video weeks — adds FFmpeg |
+| `comfyui` | GPU workstations — no editor, adds qBittorrent and FFmpeg |
+| `all` | Everything, for imaging a machine |
+
+## Options
+
+| Flag | Effect |
+|---|---|
+| `-Profile <name>` | Which profile to install. Default `base`. |
+| `-Check` | Report only. Installs nothing. |
+| `-List` | Print the profiles and packages, then exit. |
+| `-SignOut` | Clear the cached GitHub login and exit. |
+| `-Clone <owner/repo\|url>` | Clone a repo once the tools are in place. |
+| `-Into <dir>` | Where `-Clone` puts it. Default `Documents\GitHub`. |
+| `-InstallPython` | Also run `uv python install`. |
+| `-SkipIdentity` | Do not touch `git config --global user.*`. |
+| `-NonInteractive` | Never prompt. Also set by `V915_NONINTERACTIVE=1`. |
+
+Exit code is `0` when the profile is fully satisfied, `1` when something is still
+missing, `2` for a bad profile name — so it can gate a provisioning script.
+
+---
+
+## What it handles that a list of winget commands does not
+
+These are the failures that actually consume tutorial time.
+
+- **Stale `PATH`.** winget installs git, the student types `git`, and the shell —
+  started before the install — still has the old `PATH`. The script refreshes
+  `PATH` from the registry after every install, so the rest of the run sees the new
+  tool, and it says plainly which windows need reopening.
+- **No admin rights.** Lab accounts usually do not have them, and a machine-scope
+  install stalls on a UAC prompt nobody can answer. Installs are attempted with
+  `--scope user` first where a per-user installer exists.
+- **winget's exit codes.** It returns large negative numbers for benign outcomes
+  such as "already installed". Success is decided by re-locating the executable,
+  never by the exit code.
+- **Tools installed but not on `PATH`.** Each package carries known install
+  locations and, for git, its registry entry, so an existing install is found
+  rather than reinstalled.
+- **The Microsoft Store `python.exe` stub.** A zero-byte shim, early on `PATH`,
+  that opens the Store instead of running Python. It is detected and named, with
+  the fix, instead of being discovered mid-exercise.
+- **Unset git identity.** Commits with the wrong email get a grey avatar and never
+  appear on the contribution graph. Prompted for, once.
+- **Shared-machine credentials.** `-SignOut` clears Git Credential Manager, the
+  Windows Credential Manager entries and the `gh` login.
+- **No winget at all.** On an image without App Installer, every missing package
+  prints its download page rather than a stack of red errors.
+
+## Adding a tutorial
+
+Both manifests are plain PowerShell data files. `setup.ps1` has no per-tool
+branches — adding a tool means adding data, not code.
+
+1. Add the tool to `packages.psd1`. The fields are documented at the top of that
+   file; `winget search <name>` gives you the id.
+2. Add or extend a profile in `profiles.psd1`.
+3. Run `.\setup.ps1 -List` to confirm it resolves.
+
+## Layout
+
+```
+bootstrap.ps1     download-and-run entry point (no git required)
+setup.ps1         the installer
+setup.bat         double-click wrapper
+check.bat         double-click wrapper for -Check
+signout.bat       double-click wrapper for -SignOut
+packages.psd1     one entry per installable tool
+profiles.psd1     named sets of packages
+lib/Common.ps1    discovery, install, PATH and git helpers
+```
+
+Requires Windows 10 or 11 with PowerShell 5.1 (the built-in one). winget is used
+when present but is not required.
