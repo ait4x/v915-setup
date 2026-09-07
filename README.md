@@ -17,9 +17,9 @@ SD2112 or a workshop can add a profile and use the same entry point.
 
 ### ⬇ [setup.bat](https://github.com/ait4x/v915-setup/releases/latest/download/setup.bat)
 
-That is all. No git, no PowerShell, no execution-policy change — the file downloads
-everything else it needs into `Documents\v915-setup` and runs it. You will be asked for
-your name and email; use the ones on your GitHub account.
+That is all — nothing needs to be installed first. The file installs **git**, uses it to
+clone this repository into `Documents\v915-setup`, and runs the installer from there. You
+will be asked for your name and email; use the ones on your GitHub account.
 
 Windows may say *"Windows protected your PC"* because the file came from the internet.
 **More info → Run anyway.**
@@ -116,6 +116,11 @@ These are the failures that actually consume tutorial time.
   Windows Credential Manager entries and the `gh` login.
 - **No winget at all.** On an image without App Installer, every missing package
   prints its download page rather than a stack of red errors.
+- **Staying up to date.** The installer arrives as a `git clone`, so every later run is a
+  `fetch` rather than a re-download, and a folder left over from an older zip-based run is
+  converted into a clone in place — untracked files in it are left alone. A zip fallback
+  still exists for a machine where git cannot be installed, but that machine cannot install
+  anything else either, so it is a diagnostic path, not a supported one.
 
 ## Adding a tutorial
 
@@ -131,7 +136,7 @@ branches — adding a tool means adding data, not code.
 
 ```
 setup.bat         standalone entry point -- the file students download
-bootstrap.ps1     fetches the repo (zip, so no git needed) and runs setup.ps1
+bootstrap.ps1     installs git, clones the repo, runs setup.ps1
 setup.ps1         the installer
 check.bat         double-click wrapper for -Check
 signout.bat       double-click wrapper for -SignOut
