@@ -13,16 +13,25 @@ SD2112 or a workshop can add a profile and use the same entry point.
 
 ## For students
 
-Open **PowerShell** and paste one line:
+**Download one file and double-click it:**
+
+### ⬇ [setup.bat](https://github.com/ait4x/v915-setup/releases/latest/download/setup.bat)
+
+That is all. No git, no PowerShell, no execution-policy change — the file downloads
+everything else it needs into `Documents\v915-setup` and runs it. You will be asked for
+your name and email; use the ones on your GitHub account.
+
+Windows may say *"Windows protected your PC"* because the file came from the internet.
+**More info → Run anyway.**
+
+If you prefer a terminal, this does exactly the same thing:
 
 ```powershell
 irm https://raw.githubusercontent.com/ait4x/v915-setup/main/bootstrap.ps1 | iex
 ```
 
-That downloads this repo to `Documents\v915-setup` and runs the setup. You will be
-asked for your name and email — use the ones on your GitHub account.
-
-If you already have the folder, double-click **`setup.bat`** instead.
+Already have the folder? Double-click `setup.bat` inside it — it detects that and skips
+straight to the install.
 
 **When you finish on a lab machine, double-click `signout.bat`.** V915 computers are
 shared: without it, the next person's `git push` goes to *your* GitHub account.
@@ -121,15 +130,25 @@ branches — adding a tool means adding data, not code.
 ## Layout
 
 ```
-bootstrap.ps1     download-and-run entry point (no git required)
+setup.bat         standalone entry point -- the file students download
+bootstrap.ps1     fetches the repo (zip, so no git needed) and runs setup.ps1
 setup.ps1         the installer
-setup.bat         double-click wrapper
 check.bat         double-click wrapper for -Check
 signout.bat       double-click wrapper for -SignOut
 packages.psd1     one entry per installable tool
 profiles.psd1     named sets of packages
 lib/Common.ps1    discovery, install, PATH and git helpers
 ```
+
+### Why the release asset
+
+`raw.githubusercontent.com` serves `.bat` as `text/plain`, so linking the file in the repo
+shows a student its source code instead of downloading it. A release asset is served with
+`Content-Disposition: attachment` and lands in Downloads as `setup.bat`.
+
+The asset is a snapshot, but it does not go stale: `setup.bat` contains no install logic at
+all — only the URL of `bootstrap.ps1`, which is fetched from `main` on every run. Re-attach
+it to a new release only if that URL changes.
 
 Requires Windows 10 or 11 with PowerShell 5.1 (the built-in one). winget is used
 when present but is not required.
