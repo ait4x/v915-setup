@@ -9,8 +9,11 @@
 #              'owner/repo'. Goes in Documents\<repo> unless -Into is given.
 #   Python     $true to run `uv python install` so an interpreter is there
 #              before the first `uv run`, rather than downloaded in class.
-#   Prefetch   Packages to warm uv's cache with (`uv run --with <pkg>`), so the
-#              first script that needs pygame does not stall on the lab uplink.
+#   Venv       Packages to install into a .venv inside the cloned repository
+#              (`uv venv` + `uv pip install`). VS Code picks that .venv up on its
+#              own, so the Run button works and imports resolve; it also warms
+#              uv's cache so the first `uv run` does not stall on the lab uplink.
+#   Extensions VS Code extension ids to install (`code --install-extension`).
 #   Open       $true to finish by opening VS Code in the cloned repository.
 #
 # Every one of these is overridable from the command line (-Clone, -InstallPython,
@@ -25,7 +28,8 @@
         Packages    = @('git', 'vscode', 'uv')
         Clone       = 'sd5913/pfad'
         Python      = $true
-        Prefetch    = @('pygame-ce')
+        Venv        = @('pygame-ce', 'requests')
+        Extensions  = @('ms-python.python')
         Open        = $true
     }
 
@@ -34,6 +38,7 @@
         Packages    = @('git', 'vscode', 'uv', 'node', 'gh')
         Clone       = 'sd5913/pfad'
         Python      = $true
+        Extensions  = @('ms-python.python')
         Open        = $true
     }
 
@@ -42,6 +47,7 @@
         Packages    = @('git', 'vscode', 'uv', 'ffmpeg')
         Clone       = 'sd5913/pfad'
         Python      = $true
+        Extensions  = @('ms-python.python')
         Open        = $true
     }
 

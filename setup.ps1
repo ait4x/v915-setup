@@ -112,7 +112,8 @@ $selected = $Profiles[$ProfileName]
 # What the profile wants beyond packages. The command line wins where given.
 if (-not $Clone -and (Get-Field $selected 'Clone')) { $Clone = $selected.Clone }
 if ((Get-Field $selected 'Python' $false) -eq $true) { $InstallPython = $true }
-$prefetch = @(Get-Field $selected 'Prefetch' @())
+$venvPackages = @(Get-Field $selected 'Venv' @())
+$extensions = @(Get-Field $selected 'Extensions' @())
 $openAtEnd = ((Get-Field $selected 'Open' $false) -eq $true) -and -not $NoOpen
 
 $mode = if ($Check) { 'check only, nothing will be installed' } else { 'install' }
@@ -243,26 +244,49 @@ if ($Clone -and $gitExe -and -not $Check) {
     }
 }
 
-# ── Warm uv's cache ──────────────────────────────────────────────────────────
-# `uv run` resolves a script's dependencies on first run. Doing it now means the
-# first pygame window in class does not wait on thirty simultaneous downloads.
+# ── A .venv in the repo ──────────────────────────────────────────────────────
+# The scripts declare their own dependencies for `uv run`, but VS Code's Run
+# button does not go through uv. A .venv in the repository root, with the same
+# packages in it, is found by the Python extension automatically -- so both the
+# terminal and the button work. It also warms uv's cache for `uv run`.
 
-if ($prefetch.Count -gt 0 -and $uvExe -and -not $Check) {
-    Write-Section 'Fetching the packages the tutorials import'
-    foreach ($pkg in $prefetch) {
-        Write-Step "uv run --with $pkg"
-        & $uvExe run --quiet --with $pkg python -c 'pass' 2>$null
-        if ($LASTEXITCODE -eq 0) { Write-Ok $pkg } else { Write-Warn2 "$pkg could not be fetched now; uv run will try again in class." }
+if ($venvPackages.Count -gt 0 -and $uvExe -and $dest -and -not $Check) {
+    Write-Section 'Python environment for the editor'
+    $venv = Join-Path $dest '.venv'
+    if (-not (Test-Path -LiteralPath $venv)) {
+        Write-Step 'uv venv'
+        & $uvExe venv --quiet $venv 2>$null
+    }
+    $venvPython = Join-Path $venv 'Scripts\python.exe'
+    if (Test-Path -LiteralPath $venvPython) {
+        Write-Step "uv pip install $($venvPackages -join ' ')"
+        & $uvExe pip install --quiet --python $venvPython @venvPackages 2>$null
+        if ($LASTEXITCODE -eq 0) { Write-Ok ".venv ready: $venv" } else { Write-Warn2 'Some packages could not be installed now; `uv run` will fetch them in class.' }
+    } else {
+        Write-Warn2 'Could not create the .venv; `uv run script.py` still works without it.'
+    }
+}
+
+# ── VS Code extensions ───────────────────────────────────────────────────────
+
+$codeExe = Find-PackageExe $Packages['vscode']
+if ($extensions.Count -gt 0 -and $codeExe -and -not $Check) {
+    Write-Section 'VS Code extensions'
+    $have = @(& $codeExe --list-extensions 2>$null)
+    foreach ($ext in $extensions) {
+        if ($have -contains $ext) { Write-Ok "$ext (already installed)"; continue }
+        Write-Step "code --install-extension $ext"
+        & $codeExe --install-extension $ext --force 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) { Write-Ok $ext } else { Write-Warn2 "$ext could not be installed now -- Extensions view in VS Code, search 'Python'." }
     }
 }
 
 # ── Open the repo ────────────────────────────────────────────────────────────
 
-$codeExe = Find-PackageExe $Packages['vscode']
 if ($openAtEnd -and $dest -and $codeExe) {
     Write-Section 'Opening VS Code'
     & $codeExe $dest
-    Write-Ok ("VS Code opened in {0} -- open a terminal there (Ctrl+``) and type: uv run week02/schotter.py" -f $dest)
+    Write-Ok ("VS Code opened in {0} -- open week02/schotter.py and press the Run button, or Ctrl+`` for a terminal and: uv run week02/schotter.py" -f $dest)
 }
 
 # ── Summary ──────────────────────────────────────────────────────────────────

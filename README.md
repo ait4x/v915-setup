@@ -20,8 +20,8 @@ SD2112 or a workshop can add a profile and use the same entry point.
 That is all — nothing needs to be installed first. The file installs **git**, uses it to
 clone this repository into `Documents\v915-setup`, and runs the installer from there. You
 will be asked for your name and email; use the ones on your GitHub account. It ends with
-the course repository cloned into `Documents\pfad`, a Python fetched, and **VS Code open in
-that folder** — ready for `uv run`.
+the course repository cloned into `Documents\pfad`, a Python fetched, the Python extension
+installed, and **VS Code open in that folder** — the Run button and `uv run` both work.
 
 Windows may say *"Windows protected your PC"* because the file came from the internet.
 **More info → Run anyway.**
@@ -67,7 +67,7 @@ Hand out a repo along with the tools:
 
 | Profile | For |
 |---|---|
-| `base` | Weeks 1–3: git, VS Code, uv/Python; clones `sd5913/pfad`, fetches a Python, warms the cache for pygame, opens VS Code in the repo |
+| `base` | Weeks 1–3: git, VS Code, uv/Python; clones `sd5913/pfad`, fetches a Python, makes a `.venv` with pygame in it, installs the Python extension, opens VS Code in the repo |
 | `web` | Deployment weeks — adds Node.js and the GitHub CLI |
 | `media` | OpenCV / MediaPipe / video weeks — adds FFmpeg |
 | `comfyui` | GPU workstations — no editor, adds qBittorrent and FFmpeg |
