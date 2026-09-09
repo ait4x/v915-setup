@@ -19,13 +19,20 @@
 
 .PARAMETER Clone
     Repository to clone once the tools are in place. 'owner/repo' or a full URL.
+    Profiles can carry a default (base clones sd5913/pfad).
 
 .PARAMETER Into
-    Parent directory for -Clone. Default Documents\GitHub.
+    Parent directory for -Clone. Default Documents, so the course repo lands at
+    Documents\pfad -- the path the week 1 tutorial uses.
 
 .PARAMETER InstallPython
     Also run `uv python install`, so a Python interpreter exists before class
-    rather than being downloaded by thirty machines at once.
+    rather than being downloaded by thirty machines at once. Profiles can
+    default this on.
+
+.PARAMETER NoOpen
+    Do not open VS Code in the cloned repository at the end, even if the
+    profile asks for it.
 
 .PARAMETER SignOut
     Clear cached GitHub credentials and exit. Run this at the end of a class on
@@ -50,6 +57,7 @@ param(
     [switch]$NonInteractive,
     [switch]$SkipIdentity,
     [switch]$InstallPython,
+    [switch]$NoOpen,
 
     [string]$Clone,
     [string]$Into
@@ -100,6 +108,12 @@ if (-not $Profiles.ContainsKey($ProfileName)) {
     exit 2
 }
 $selected = $Profiles[$ProfileName]
+
+# What the profile wants beyond packages. The command line wins where given.
+if (-not $Clone -and (Get-Field $selected 'Clone')) { $Clone = $selected.Clone }
+if ((Get-Field $selected 'Python' $false) -eq $true) { $InstallPython = $true }
+$prefetch = @(Get-Field $selected 'Prefetch' @())
+$openAtEnd = ((Get-Field $selected 'Open' $false) -eq $true) -and -not $NoOpen
 
 $mode = if ($Check) { 'check only, nothing will be installed' } else { 'install' }
 Write-Head "V915 setup -- profile '$ProfileName' ($mode)"
@@ -198,11 +212,17 @@ if ($uvExe) {
 
 # ── Optional clone ───────────────────────────────────────────────────────────
 
+$dest = $null
 if ($Clone -and $gitExe -and -not $Check) {
     Write-Section "Cloning $Clone"
 
     $url = if ($Clone -match '^[\w.-]+/[\w.-]+$') { "https://github.com/$Clone.git" } else { $Clone }
-    if (-not $Into) { $Into = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'GitHub' }
+    if (-not $Into) {
+        # Documents can come back empty when the lab profile uses folder
+        # redirection; fall back to the profile directory in that case.
+        $Into = [Environment]::GetFolderPath('MyDocuments')
+        if (-not $Into) { $Into = Join-Path $env:USERPROFILE 'Documents' }
+    }
     New-Item -ItemType Directory -Path $Into -Force | Out-Null
 
     $leaf = ($url -replace '\.git$', '') -split '/' | Select-Object -Last 1
@@ -219,7 +239,30 @@ if ($Clone -and $gitExe -and -not $Check) {
         Write-Ok $dest
     } else {
         Write-Fail "clone failed: $url"
+        $dest = $null
     }
+}
+
+# ── Warm uv's cache ──────────────────────────────────────────────────────────
+# `uv run` resolves a script's dependencies on first run. Doing it now means the
+# first pygame window in class does not wait on thirty simultaneous downloads.
+
+if ($prefetch.Count -gt 0 -and $uvExe -and -not $Check) {
+    Write-Section 'Fetching the packages the tutorials import'
+    foreach ($pkg in $prefetch) {
+        Write-Step "uv run --with $pkg"
+        & $uvExe run --quiet --with $pkg python -c 'pass' 2>$null
+        if ($LASTEXITCODE -eq 0) { Write-Ok $pkg } else { Write-Warn2 "$pkg could not be fetched now; uv run will try again in class." }
+    }
+}
+
+# ── Open the repo ────────────────────────────────────────────────────────────
+
+$codeExe = Find-PackageExe $Packages['vscode']
+if ($openAtEnd -and $dest -and $codeExe) {
+    Write-Section 'Opening VS Code'
+    & $codeExe $dest
+    Write-Ok ("VS Code opened in {0} -- open a terminal there (Ctrl+``) and type: uv run week02/schotter.py" -f $dest)
 }
 
 # ── Summary ──────────────────────────────────────────────────────────────────

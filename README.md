@@ -19,7 +19,9 @@ SD2112 or a workshop can add a profile and use the same entry point.
 
 That is all — nothing needs to be installed first. The file installs **git**, uses it to
 clone this repository into `Documents\v915-setup`, and runs the installer from there. You
-will be asked for your name and email; use the ones on your GitHub account.
+will be asked for your name and email; use the ones on your GitHub account. It ends with
+the course repository cloned into `Documents\pfad`, a Python fetched, and **VS Code open in
+that folder** — ready for `uv run`.
 
 Windows may say *"Windows protected your PC"* because the file came from the internet.
 **More info → Run anyway.**
@@ -65,7 +67,7 @@ Hand out a repo along with the tools:
 
 | Profile | For |
 |---|---|
-| `base` | Week 1 baseline: git, VS Code, uv/Python |
+| `base` | Weeks 1–3: git, VS Code, uv/Python; clones `sd5913/pfad`, fetches a Python, warms the cache for pygame, opens VS Code in the repo |
 | `web` | Deployment weeks — adds Node.js and the GitHub CLI |
 | `media` | OpenCV / MediaPipe / video weeks — adds FFmpeg |
 | `comfyui` | GPU workstations — no editor, adds qBittorrent and FFmpeg |
@@ -79,9 +81,10 @@ Hand out a repo along with the tools:
 | `-Check` | Report only. Installs nothing. |
 | `-List` | Print the profiles and packages, then exit. |
 | `-SignOut` | Clear the cached GitHub login and exit. |
-| `-Clone <owner/repo\|url>` | Clone a repo once the tools are in place. |
-| `-Into <dir>` | Where `-Clone` puts it. Default `Documents\GitHub`. |
-| `-InstallPython` | Also run `uv python install`. |
+| `-Clone <owner/repo\|url>` | Clone a repo once the tools are in place. Profiles carry a default. |
+| `-Into <dir>` | Where `-Clone` puts it. Default `Documents`. |
+| `-InstallPython` | Also run `uv python install`. Profiles can default this on. |
+| `-NoOpen` | Do not open VS Code in the cloned repo at the end. |
 | `-SkipIdentity` | Do not touch `git config --global user.*`. |
 | `-NonInteractive` | Never prompt. Also set by `V915_NONINTERACTIVE=1`. |
 
